@@ -27,7 +27,19 @@ $web_rule_http = New-AzNetworkSecurityRuleConfig `
     -DestinationAddressPrefix $webSubnetIpRange `
     -DestinationPortRanges @('80','443')
 
-$web_nsg = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location -Name $webSubnetName -SecurityRules $web_rule_http
+$web_Vnet_rule = New-AzNetworkSecurityRuleConfig `
+    -Name "Allow_Traffic_From_VNet" `
+    -Description "Allow traffic from other subnets from the same VNet" `
+    -Access Allow `
+    -Protocol * `
+    -Direction Inbound `
+    -Priority 200 `
+    -SourceAddressPrefix VirtualNetwork `
+    -SourcePortRange * `
+    -DestinationAddressPrefix VirtualNetwork `
+    -DestinationPortRange *
+
+$web_nsg = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location -Name $webSubnetName -SecurityRules $web_rule_http, $web_Vnet_rule
 
 Write-Host "Creating mngSubnet network security group..."
 $mng_rule = New-AzNetworkSecurityRuleConfig `
@@ -42,19 +54,31 @@ $mng_rule = New-AzNetworkSecurityRuleConfig `
     -DestinationAddressPrefix $mngSubnetIpRange `
     -DestinationPortRange 22
 
-$mng_nsg = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location -Name $mngSubnetName -SecurityRules $mng_rule
+$mng_Vnet_rule = New-AzNetworkSecurityRuleConfig `
+    -Name "Allow_Traffic_From_VNet" `
+    -Description "Allow traffic from other subnets from the same VNet" `
+    -Access Allow `
+    -Protocol * `
+    -Direction Inbound `
+    -Priority 200 `
+    -SourceAddressPrefix VirtualNetwork `
+    -SourcePortRange * `
+    -DestinationAddressPrefix VirtualNetwork `
+    -DestinationPortRange *
+
+$mng_nsg = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location -Name $mngSubnetName -SecurityRules $mng_rule, $mng_Vnet_rule
 
 Write-Host "Creating dbSubnet network security group..."
 $db_Vnet_rule = New-AzNetworkSecurityRuleConfig `
     -Name "Allow_Traffic_From_VNet" `
     -Description "Allow traffic from other subnets within the same VNet" `
     -Access Allow `
-    -Protocol Tcp `
+    -Protocol * `
     -Direction Inbound `
     -Priority 100 `
     -SourceAddressPrefix VirtualNetwork `
     -SourcePortRange * `
-    -DestinationAddressPrefix $dbSubnetIpRange `
+    -DestinationAddressPrefix VirtualNetwork `
     -DestinationPortRange *
 
 $db_nsg = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location -Name $dbSubnetName -SecurityRules $db_Vnet_rule
