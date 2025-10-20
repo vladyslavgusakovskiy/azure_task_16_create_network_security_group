@@ -25,7 +25,7 @@ $web_rule_http = New-AzNetworkSecurityRuleConfig `
     -SourceAddressPrefix Internet `
     -SourcePortRange * `
     -DestinationAddressPrefix $webSubnetIpRange `
-    -DestinationPortRange 80, 443
+    -DestinationPortRanges @('80','443')
 
 $web_nsg = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location -Name $webSubnetName -SecurityRules $web_rule_http
 
@@ -45,7 +45,19 @@ $mng_rule = New-AzNetworkSecurityRuleConfig `
 $mng_nsg = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location -Name $mngSubnetName -SecurityRules $mng_rule
 
 Write-Host "Creating dbSubnet network security group..."
-$db_nsg = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location -Name $dbSubnetName
+$db_Vnet_rule = New-AzNetworkSecurityRuleConfig `
+    -Name "Allow_Traffic_From_VNet" `
+    -Description "Allow traffic from other subnets within the same VNet" `
+    -Access Allow `
+    -Protocol Tcp `
+    -Direction Inbound `
+    -Priority 100 `
+    -SourceAddressPrefix VirtualNetwork `
+    -SourcePortRange * `
+    -DestinationAddressPrefix $dbSubnetIpRange `
+    -DestinationPortRange *
+
+$db_nsg = New-AzNetworkSecurityGroup -ResourceGroupName $resourceGroupName -Location $location -Name $dbSubnetName -SecurityRules $db_Vnet_rule
 
 
 Write-Host "Creating a virtual network ..."
